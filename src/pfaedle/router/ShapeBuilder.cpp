@@ -279,6 +279,85 @@ EdgeCandGroup ShapeBuilder::getEdgCands(const Stop* s) const {
 }
 
 // _____________________________________________________________________________
+EdgeCandGroup ShapeBuilder::getEdgCands(POINT pos) const {
+  EdgeCandGroup ret;
+
+  // the first cand is a placeholder for the stop position itself, it is chosen
+  // when no candidate yielded a feasible route
+  ret.push_back({0, 0, 0, pos, 0, {}});
+
+  double maxMDist = _motCfg.osmBuildOpts.maxStationCandDistance;
+
+  double distor = util::geo::latLngDistFactor(pos);
+
+  if (_cfg.gaussianNoise > 0) {
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine gen(seed);
+
+    // the standard dev is given in meters, convert (roughly...) to degrees
+    double standardDev = (_cfg.gaussianNoise / M_PER_DEG) / distor;
+
+    // mean 0 (no movement), standard dev according to config
+    std::normal_distribution<double> dist(0.0, standardDev);
+
+    // add gaussian noise
+    pos.setX(pos.getX() + dist(gen));
+    pos.setY(pos.getY() + dist(gen));
+  }
+
+  maxMDist = _motCfg.osmBuildOpts.maxSnapDistance;
+
+  std::set<trgraph::Edge*> frEIdx;
+  _eGrid.get(util::geo::pad(util::geo::getBoundingBox(pos),
+                            (maxMDist / M_PER_DEG) / distor),
+             &frEIdx);
+
+  std::set<trgraph::Edge*> selected;
+  std::map<const trgraph::Edge*, double> scores;
+  std::map<const trgraph::Edge*, double> progrs;
+
+  for (auto edg : frEIdx) {
+    if (selected.count(edg)) continue;
+
+    auto reach = deg2reachable(edg, selected);
+
+    double mDist = dist(pos, *edg->pl().getGeom()) * distor * M_PER_DEG;
+
+    if (mDist > maxMDist) continue;
+
+    if (!reach || mDist < scores[reach]) {
+      if (reach) {
+        selected.erase(selected.find(reach));
+        scores.erase(scores.find(reach));
+      }
+      util::geo::PolyLine<double> pl(*edg->pl().getGeom());
+      auto lp = pl.projectOn(pos);
+      double progr = lp.totalPos;
+      if (edg->pl().isRev()) progr = 1 - progr;
+      selected.insert(edg);
+      scores[edg] = mDist;
+      progrs[edg] = progr;
+    }
+  }
+
+  for (auto e : selected) {
+    ret.push_back({e,
+                   emWeight(scores[e]),
+                   progrs[e],
+                   {},
+                   0,
+                   {}});
+  }
+
+  if (ret.size() == 1 && _cfg.verbosity) {
+    LOG(WARN) << "No snapping candidate found for sample point '"
+              << "' (lon: " << pos.getX() << ", lat: " << pos.getY() << ")";
+  }
+
+  return ret;
+}
+
+// _____________________________________________________________________________
 pfaedle::trgraph::Edge* ShapeBuilder::deg2reachable(
     trgraph::Edge* e, std::set<trgraph::Edge*> edgs) const {
   trgraph::Edge* cur = e;

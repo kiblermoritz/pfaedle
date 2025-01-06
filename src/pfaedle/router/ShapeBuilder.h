@@ -113,6 +113,7 @@ class ShapeBuilder {
                 const std::vector<float>& dists);
 
   EdgeCandGroup getEdgCands(const ad::cppgtfs::gtfs::Stop* s) const;
+  EdgeCandGroup getEdgCands(POINT pos) const;
 
   router::EdgeCandMap getECM(const TripTrie<pfaedle::gtfs::Trip>* trie) const;
   std::vector<double> getTransTimes(pfaedle::gtfs::Trip* trip) const;
