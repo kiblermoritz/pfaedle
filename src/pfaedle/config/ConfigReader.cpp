@@ -44,6 +44,10 @@ void ConfigReader::help(const char* bin) {
             << "drop shapes already present in the feed and\n"
             << std::setw(35) << " "
             << "  recalculate them\n"
+            << std::setw(35) << "  -U [ --use-existing-shapes ] arg"
+            << "use existing shapes in GTFS input for matching\n"
+            << std::setw(35) << " "
+            << "  parameter is sample rate of existing shapes in meters\n"
             << std::setw(35) << "  --write-colors"
             << "write matched route line colors, where missing\n"
             << "\nInput:\n"
@@ -131,6 +135,7 @@ void ConfigReader::read(Config* cfg, int argc, char** argv) {
                          {"config", required_argument, 0, 'c'},
                          {"osm-file", required_argument, 0, 'x'},
                          {"drop-shapes", required_argument, 0, 'D'},
+                         {"use-existing-shapes", required_argument, 0, 'U'},
                          {"mots", required_argument, NULL, 'm'},
                          {"grid-size", required_argument, 0, 'g'},
                          {"box-padding", required_argument, 0, 'b'},
@@ -156,7 +161,7 @@ void ConfigReader::read(Config* cfg, int argc, char** argv) {
                          {0, 0, 0, 0}};
 
   int c;
-  while ((c = getopt_long(argc, argv, ":o:hvi:c:x:Dm:g:X:T:d:pP:FWb:", ops, 0)) !=
+  while ((c = getopt_long(argc, argv, ":o:hvi:c:x:DU:m:g:X:T:d:pP:FWb:", ops, 0)) !=
          -1) {
     switch (c) {
       case 1:
@@ -188,6 +193,9 @@ void ConfigReader::read(Config* cfg, int argc, char** argv) {
         break;
       case 'D':
         cfg->dropShapes = true;
+        break;
+      case 'U':
+        cfg->useExistingShapes = atof(optarg);
         break;
       case 'm':
         motStr = optarg;

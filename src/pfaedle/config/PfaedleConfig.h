@@ -38,6 +38,7 @@ struct Config {
         noHopCache(false),
         writeStats(false),
         parseAdditionalGTFSFields(false),
+        useExistingShapes(-1),
         gridSize(2000 / util::geo::M_PER_DEG),
         boxPadding(20000),
         gaussianNoise(0),
@@ -67,6 +68,7 @@ struct Config {
   bool noHopCache;
   bool writeStats;
   bool parseAdditionalGTFSFields;
+  double useExistingShapes;
   double gridSize;
   double boxPadding;
   double gaussianNoise;
@@ -95,6 +97,7 @@ struct Config {
        << "no-hop-cache: " << noHopCache << "\n"
        << "verbosity: " << verbosity << "\n"
        << "parse-additional-gtfs-fields: " << parseAdditionalGTFSFields << "\n"
+       << "use-existing-shapes: " << useExistingShapes << "\n"
        << "write-stats: " << writeStats << "\n"
        << "feed-paths: ";
 
