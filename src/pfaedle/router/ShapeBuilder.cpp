@@ -159,6 +159,9 @@ EdgeCandGroup ShapeBuilder::getEdgCands(const Stop* s) const {
 
   EdgeCandGroup ret;
 
+  // If id is empty, s is a placeholder for a non-station
+  bool isStation = (s->getId() != "");
+
   const auto& snormzer = _motCfg.osmBuildOpts.statNormzer;
   auto normedName = snormzer.norm(s->getName());
 
@@ -191,7 +194,7 @@ EdgeCandGroup ShapeBuilder::getEdgCands(const Stop* s) const {
                             (maxMDist / M_PER_DEG) / distor),
              &frNIdx);
 
-  if (_motCfg.routingOpts.useStations) {
+  if (_motCfg.routingOpts.useStations && isStation) {
     for (auto nd : frNIdx) {
       assert(nd->pl().getSI());
 
@@ -261,9 +264,12 @@ EdgeCandGroup ShapeBuilder::getEdgCands(const Stop* s) const {
     }
   }
 
+  // Don't add penalty if s is not a stop
+  double nonStationPen = isStation ? 0 : _motCfg.routingOpts.nonStationPen;
+
   for (auto e : selected) {
     ret.push_back({e,
-                   emWeight(scores[e]) + _motCfg.routingOpts.nonStationPen,
+                   emWeight(scores[e]) + nonStationPen,
                    progrs[e],
                    {},
                    0,
